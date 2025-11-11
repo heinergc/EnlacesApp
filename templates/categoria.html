@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}{{ categoria.nombre }} - Gestión de Enlaces{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header con breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/" class="text-decoration-none">
+                    <i class="bi bi-house-door"></i> Inicio
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ categoria.nombre }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header con título y botones -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="display-5 fw-bold mb-2">
+                        <i class="bi bi-folder text-primary"></i>
+                        {{ categoria.nombre }}
+                    </h1>
+                    <p class="text-muted">Enlaces en esta categoría</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalEnlace">
+                        <i class="bi bi-plus-circle me-2"></i>Nuevo Enlace
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div id="loader" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-3 text-muted">Cargando enlaces...</p>
+    </div>
+
+    <!-- Grid de enlaces -->
+    <div id="enlacesContainer" class="row g-4" style="display: none;">
+        <!-- Las cards de enlaces se cargarán dinámicamente aquí -->
+    </div>
+
+    <!-- Mensaje cuando no hay enlaces -->
+    <div id="noEnlacesMessage" class="alert alert-info text-center" style="display: none;">
+        <i class="bi bi-info-circle fs-3 mb-3"></i>
+        <h4>No hay enlaces en esta categoría</h4>
+        <p>Comienza agregando tu primer enlace.</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEnlace">
+            <i class="bi bi-plus-circle me-2"></i>Agregar Primer Enlace
+        </button>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Enlace -->
+<div class="modal fade" id="modalEnlace" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEnlaceTitle">
+                    <i class="bi bi-link-45deg me-2"></i>Nuevo Enlace
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEnlace">
+                    <input type="hidden" id="enlaceId">
+                    <div class="mb-3">
+                        <label for="enlaceTitulo" class="form-label">Título del Enlace</label>
+                        <input type="text" class="form-control" id="enlaceTitulo" required
+                               placeholder="Ej: GitHub, Google, YouTube...">
+                        <div class="form-text">Nombre descriptivo que se mostrará en la tarjeta</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="enlaceUrl" class="form-label">URL</label>
+                        <input type="url" class="form-control" id="enlaceUrl" required
+                               placeholder="https://www.ejemplo.com">
+                        <div class="form-text">La dirección web completa del enlace</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="enlaceCategoria" class="form-label">Categoría</label>
+                        <select class="form-select" id="enlaceCategoria" required>
+                            <option value="{{ categoria.id }}" selected>{{ categoria.nombre }}</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarEnlace">
+                    <i class="bi bi-check-circle me-2"></i>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="modalConfirmarEliminar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="mensajeConfirmacion">¿Estás seguro de que deseas eliminar este enlace?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">
+                    <i class="bi bi-trash me-2"></i>Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const categoriaId = {{ categoria.id }};
+let enlaceIdAEliminar = null;
+
+// Cargar enlaces al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    cargarCategorias();
+    cargarEnlaces();
+
+    // Event listener para guardar enlace
+    document.getElementById('btnGuardarEnlace').addEventListener('click', guardarEnlace);
+
+    // Event listener para confirmar eliminación
+    document.getElementById('btnConfirmarEliminar').addEventListener('click', confirmarEliminarEnlace);
+
+    // Limpiar formulario al cerrar modal
+    document.getElementById('modalEnlace').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('formEnlace').reset();
+        document.getElementById('enlaceId').value = '';
+        document.getElementById('enlaceCategoria').value = categoriaId;
+        document.getElementById('modalEnlaceTitle').innerHTML = '<i class="bi bi-link-45deg me-2"></i>Nuevo Enlace';
+    });
+});
+
+// Cargar categorías para el select
+async function cargarCategorias() {
+    try {
+        const response = await fetch('/api/categorias');
+        const data = await response.json();
+
+        if (data.success) {
+            const select = document.getElementById('enlaceCategoria');
+            select.innerHTML = '';
+
+            data.categorias.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.nombre;
+                if (cat.id === categoriaId) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error al cargar categorías:', error);
+    }
+}
+
+// Cargar enlaces de la categoría
+async function cargarEnlaces() {
+    try {
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('enlacesContainer').style.display = 'none';
+        document.getElementById('noEnlacesMessage').style.display = 'none';
+
+        const response = await fetch(`/api/enlaces?categoria_id=${categoriaId}`);
+        const data = await response.json();
+
+        if (data.success) {
+            const container = document.getElementById('enlacesContainer');
+            container.innerHTML = '';
+
+            if (data.enlaces.length === 0) {
+                document.getElementById('noEnlacesMessage').style.display = 'block';
+            } else {
+                data.enlaces.forEach(enlace => {
+                    container.innerHTML += crearCardEnlace(enlace);
+                });
+                document.getElementById('enlacesContainer').style.display = 'flex';
+            }
+        }
+    } catch (error) {
+        console.error('Error al cargar enlaces:', error);
+        mostrarNotificacion('Error al cargar los enlaces', 'error');
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+    }
+}
+
+// Crear HTML para card de enlace
+function crearCardEnlace(enlace) {
+    return `
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="card enlace-card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">${enlace.titulo}</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="editarEnlace(${enlace.id})">
+                                        <i class="bi bi-pencil me-2"></i>Editar
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="#" onclick="solicitarEliminarEnlace(${enlace.id}, '${enlace.titulo}')">
+                                        <i class="bi bi-trash me-2"></i>Eliminar
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="card-text text-muted small mb-3">
+                        <i class="bi bi-link-45deg me-1"></i>
+                        ${truncateUrl(enlace.url)}
+                    </p>
+                    <div class="mt-auto">
+                        <a href="${enlace.url}" target="_blank" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-box-arrow-up-right me-2"></i>Abrir Enlace
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Truncar URL para mostrar
+function truncateUrl(url) {
+    if (url.length > 40) {
+        return url.substring(0, 40) + '...';
+    }
+    return url;
+}
+
+// Guardar enlace (crear o actualizar)
+async function guardarEnlace() {
+    const id = document.getElementById('enlaceId').value;
+    const titulo = document.getElementById('enlaceTitulo').value.trim();
+    const url = document.getElementById('enlaceUrl').value.trim();
+    const categoria_id = document.getElementById('enlaceCategoria').value;
+
+    if (!titulo || !url) {
+        mostrarNotificacion('Por favor completa todos los campos', 'error');
+        return;
+    }
+
+    try {
+        const apiUrl = id ? `/api/enlaces/${id}` : '/api/enlaces';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(apiUrl, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                titulo: titulo,
+                url: url,
+                categoria_id: parseInt(categoria_id)
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarNotificacion(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('modalEnlace')).hide();
+            cargarEnlaces();
+        } else {
+            mostrarNotificacion(data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error al guardar enlace:', error);
+        mostrarNotificacion('Error al guardar el enlace', 'error');
+    }
+}
+
+// Editar enlace
+async function editarEnlace(id) {
+    try {
+        const response = await fetch(`/api/enlaces/${id}`);
+        const data = await response.json();
+
+        if (data.success) {
+            const enlace = data.enlace;
+            document.getElementById('enlaceId').value = enlace.id;
+            document.getElementById('enlaceTitulo').value = enlace.titulo;
+            document.getElementById('enlaceUrl').value = enlace.url;
+            document.getElementById('enlaceCategoria').value = enlace.categoria_id;
+            document.getElementById('modalEnlaceTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Enlace';
+            new bootstrap.Modal(document.getElementById('modalEnlace')).show();
+        }
+    } catch (error) {
+        console.error('Error al cargar enlace:', error);
+        mostrarNotificacion('Error al cargar el enlace', 'error');
+    }
+}
+
+// Solicitar confirmación para eliminar
+function solicitarEliminarEnlace(id, titulo) {
+    enlaceIdAEliminar = id;
+    document.getElementById('mensajeConfirmacion').textContent =
+        `¿Estás seguro de que deseas eliminar el enlace "${titulo}"?`;
+    new bootstrap.Modal(document.getElementById('modalConfirmarEliminar')).show();
+}
+
+// Confirmar y ejecutar eliminación
+async function confirmarEliminarEnlace() {
+    if (!enlaceIdAEliminar) return;
+
+    try {
+        const response = await fetch(`/api/enlaces/${enlaceIdAEliminar}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarNotificacion(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('modalConfirmarEliminar')).hide();
+            enlaceIdAEliminar = null;
+            cargarEnlaces();
+        } else {
+            mostrarNotificacion(data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error al eliminar enlace:', error);
+        mostrarNotificacion('Error al eliminar el enlace', 'error');
+    }
+}
+</script>
+{% endblock %}

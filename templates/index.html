@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gestión de Enlaces{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header con título y botones -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1 class="display-5 fw-bold mb-2">
+                        <i class="bi bi-grid-3x3-gap text-primary"></i>
+                        Dashboard de Categorías
+                    </h1>
+                    <p class="text-muted">Organiza y gestiona tus enlaces por categorías</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalCategoria">
+                        <i class="bi bi-plus-circle me-2"></i>Nueva Categoría
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div id="loader" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-3 text-muted">Cargando categorías...</p>
+    </div>
+
+    <!-- Grid de categorías -->
+    <div id="categoriasContainer" class="row g-4" style="display: none;">
+        <!-- Las cards de categorías se cargarán dinámicamente aquí -->
+    </div>
+
+    <!-- Mensaje cuando no hay categorías -->
+    <div id="noCategoriasMessage" class="alert alert-info text-center" style="display: none;">
+        <i class="bi bi-info-circle fs-3 mb-3"></i>
+        <h4>No hay categorías todavía</h4>
+        <p>Comienza creando tu primera categoría para organizar tus enlaces.</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCategoria">
+            <i class="bi bi-plus-circle me-2"></i>Crear Primera Categoría
+        </button>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Categoría -->
+<div class="modal fade" id="modalCategoria" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCategoriaTitle">
+                    <i class="bi bi-folder-plus me-2"></i>Nueva Categoría
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCategoria">
+                    <input type="hidden" id="categoriaId">
+                    <div class="mb-3">
+                        <label for="categoriaNombre" class="form-label">Nombre de la Categoría</label>
+                        <input type="text" class="form-control" id="categoriaNombre" required
+                               placeholder="Ej: Desarrollo, Noticias, Diseño...">
+                        <div class="form-text">Ingresa un nombre descriptivo para la categoría</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarCategoria">
+                    <i class="bi bi-check-circle me-2"></i>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="modalConfirmarEliminar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="mensajeConfirmacion">¿Estás seguro de que deseas eliminar esta categoría?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    <strong>Advertencia:</strong> Esta acción eliminará la categoría y todos sus enlaces asociados.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">
+                    <i class="bi bi-trash me-2"></i>Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let categoriaIdAEliminar = null;
+
+// Cargar categorías al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    cargarCategorias();
+
+    // Event listener para guardar categoría
+    document.getElementById('btnGuardarCategoria').addEventListener('click', guardarCategoria);
+
+    // Event listener para confirmar eliminación
+    document.getElementById('btnConfirmarEliminar').addEventListener('click', confirmarEliminarCategoria);
+
+    // Limpiar formulario al cerrar modal
+    document.getElementById('modalCategoria').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('formCategoria').reset();
+        document.getElementById('categoriaId').value = '';
+        document.getElementById('modalCategoriaTitle').innerHTML = '<i class="bi bi-folder-plus me-2"></i>Nueva Categoría';
+    });
+});
+
+// Cargar todas las categorías
+async function cargarCategorias() {
+    try {
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('categoriasContainer').style.display = 'none';
+        document.getElementById('noCategoriasMessage').style.display = 'none';
+
+        const response = await fetch('/api/categorias');
+        const data = await response.json();
+
+        if (data.success) {
+            const container = document.getElementById('categoriasContainer');
+            container.innerHTML = '';
+
+            if (data.categorias.length === 0) {
+                document.getElementById('noCategoriasMessage').style.display = 'block';
+            } else {
+                data.categorias.forEach(categoria => {
+                    container.innerHTML += crearCardCategoria(categoria);
+                });
+                document.getElementById('categoriasContainer').style.display = 'flex';
+            }
+        }
+    } catch (error) {
+        console.error('Error al cargar categorías:', error);
+        mostrarNotificacion('Error al cargar las categorías', 'error');
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+    }
+}
+
+// Crear HTML para card de categoría
+function crearCardCategoria(categoria) {
+    return `
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="card categoria-card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">${categoria.nombre}</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="editarCategoria(${categoria.id}, '${categoria.nombre}')">
+                                        <i class="bi bi-pencil me-2"></i>Editar
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="#" onclick="solicitarEliminarCategoria(${categoria.id}, '${categoria.nombre}')">
+                                        <i class="bi bi-trash me-2"></i>Eliminar
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge bg-primary rounded-pill">
+                                ${categoria.cantidad_enlaces} ${categoria.cantidad_enlaces === 1 ? 'enlace' : 'enlaces'}
+                            </span>
+                        </div>
+                        <a href="/categoria/${categoria.id}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-arrow-right-circle me-2"></i>Ver Enlaces
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Guardar categoría (crear o actualizar)
+async function guardarCategoria() {
+    const id = document.getElementById('categoriaId').value;
+    const nombre = document.getElementById('categoriaNombre').value.trim();
+
+    if (!nombre) {
+        mostrarNotificacion('Por favor ingresa un nombre para la categoría', 'error');
+        return;
+    }
+
+    try {
+        const url = id ? `/api/categorias/${id}` : '/api/categorias';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ nombre: nombre })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarNotificacion(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('modalCategoria')).hide();
+            cargarCategorias();
+        } else {
+            mostrarNotificacion(data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error al guardar categoría:', error);
+        mostrarNotificacion('Error al guardar la categoría', 'error');
+    }
+}
+
+// Editar categoría
+function editarCategoria(id, nombre) {
+    document.getElementById('categoriaId').value = id;
+    document.getElementById('categoriaNombre').value = nombre;
+    document.getElementById('modalCategoriaTitle').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Categoría';
+    new bootstrap.Modal(document.getElementById('modalCategoria')).show();
+}
+
+// Solicitar confirmación para eliminar
+function solicitarEliminarCategoria(id, nombre) {
+    categoriaIdAEliminar = id;
+    document.getElementById('mensajeConfirmacion').textContent =
+        `¿Estás seguro de que deseas eliminar la categoría "${nombre}"?`;
+    new bootstrap.Modal(document.getElementById('modalConfirmarEliminar')).show();
+}
+
+// Confirmar y ejecutar eliminación
+async function confirmarEliminarCategoria() {
+    if (!categoriaIdAEliminar) return;
+
+    try {
+        const response = await fetch(`/api/categorias/${categoriaIdAEliminar}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarNotificacion(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('modalConfirmarEliminar')).hide();
+            categoriaIdAEliminar = null;
+            cargarCategorias();
+        } else {
+            mostrarNotificacion(data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error al eliminar categoría:', error);
+        mostrarNotificacion('Error al eliminar la categoría', 'error');
+    }
+}
+</script>
+{% endblock %}

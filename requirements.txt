@@ -1,0 +1,13 @@
+# Aplicación de Gestión de Enlaces - Dependencias Python
+
+# Framework Web
+Flask==3.0.0
+
+# ORM para SQLite
+Flask-SQLAlchemy==3.1.1
+
+# Utilidades adicionales
+Werkzeug==3.0.1
+
+# Para manejo de CORS (si se necesita en el futuro)
+Flask-CORS==4.0.0
