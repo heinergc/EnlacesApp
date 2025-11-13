@@ -10,8 +10,18 @@ from database import init_db
 app = Flask(__name__)
 
 # Configuración
-app.config['SECRET_KEY'] = 'tu-clave-secreta-aqui-cambiala-en-produccion'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///enlaces.db'
+# Usar variable de entorno para SECRET_KEY en producción, o una por defecto en desarrollo
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tu-clave-secreta-aqui-cambiala-en-produccion')
+
+# Configurar base de datos según el entorno
+if os.environ.get('RENDER'):
+    # En producción (Render), usar base de datos persistente
+    db_path = '/opt/render/project/data/enlaces.db'
+else:
+    # En desarrollo local
+    db_path = 'enlaces.db'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializar la base de datos
