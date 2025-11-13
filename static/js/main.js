@@ -116,6 +116,33 @@ function truncarTexto(texto, longitud = 50) {
 }
 
 // ================================
+// Búsqueda de Google
+// ================================
+
+/**
+ * Realiza una búsqueda en Google con el término ingresado
+ */
+function realizarBusquedaGoogle() {
+    const input = document.getElementById('googleSearchInput');
+    const searchTerm = input.value.trim();
+
+    if (searchTerm === '') {
+        mostrarNotificacion('Por favor ingresa un término de búsqueda', 'warning');
+        input.focus();
+        return;
+    }
+
+    // Codificar el término de búsqueda para URL
+    const encodedSearch = encodeURIComponent(searchTerm);
+
+    // Abrir Google en una nueva pestaña con el término de búsqueda
+    window.open(`https://www.google.com/search?q=${encodedSearch}`, '_blank');
+
+    // Limpiar el campo de búsqueda
+    input.value = '';
+}
+
+// ================================
 // Utilidades de Animación
 // ================================
 
@@ -283,6 +310,15 @@ document.addEventListener('DOMContentLoaded', function() {
     popoverTriggerList.map(function(popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl);
     });
+
+    // Inicializar búsqueda de Google
+    const googleSearchForm = document.getElementById('googleSearchForm');
+    if (googleSearchForm) {
+        googleSearchForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            realizarBusquedaGoogle();
+        });
+    }
 
     // Log de inicialización
     console.log('✅ Aplicación de Gestión de Enlaces inicializada');

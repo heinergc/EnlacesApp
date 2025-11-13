@@ -10,8 +10,8 @@ from database import init_db
 app = Flask(__name__)
 
 # Configuración
-app.config['SECRET_KEY'] = 'tu-clave-secreta-aqui-cambiala-en-produccion'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///enlaces.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tu-clave-secreta-aqui-cambiala-en-produccion')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///enlaces.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializar la base de datos
