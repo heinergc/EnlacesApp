@@ -294,7 +294,60 @@ async function apiDelete(url) {
 // Inicialización
 // ================================
 
+// ================================
+// Gestión de Usuario
+// ================================
+
+/**
+ * Cargar información del usuario actual
+ */
+async function cargarUsuario() {
+    try {
+        const response = await fetch('/api/user');
+        const data = await response.json();
+
+        const userSection = document.getElementById('userSection');
+
+        if (data.success && data.user) {
+            // Usuario autenticado
+            userSection.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <img src="${data.user.foto_perfil}"
+                         alt="${data.user.nombre}"
+                         class="rounded-circle me-2"
+                         width="32"
+                         height="32"
+                         onerror="this.src='https://via.placeholder.com/32'">
+                    <span class="text-white me-3">${data.user.nombre}</span>
+                    <a href="/logout" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-box-arrow-right me-1"></i>Salir
+                    </a>
+                </div>
+            `;
+        } else {
+            // Usuario no autenticado
+            userSection.innerHTML = `
+                <a href="/login" class="btn btn-light">
+                    <i class="bi bi-google me-2"></i>Iniciar con Google
+                </a>
+            `;
+        }
+    } catch (error) {
+        console.error('Error al cargar usuario:', error);
+        // Mostrar botón de login por defecto en caso de error
+        const userSection = document.getElementById('userSection');
+        userSection.innerHTML = `
+            <a href="/login" class="btn btn-light">
+                <i class="bi bi-google me-2"></i>Iniciar con Google
+            </a>
+        `;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Cargar información del usuario
+    cargarUsuario();
+
     // Inicializar todos los tooltips de Bootstrap
     const tooltipTriggerList = [].slice.call(
         document.querySelectorAll('[data-bs-toggle="tooltip"]')

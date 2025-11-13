@@ -14,3 +14,8 @@ Flask-CORS==4.0.0
 
 # Servidor WSGI para producción
 gunicorn==21.2.0
+
+# Autenticación OAuth con Google
+Flask-Login==0.6.3
+Authlib==1.3.0
+requests==2.31.0

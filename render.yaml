@@ -11,4 +11,10 @@ services:
         generateValue: true
       - key: FLASK_ENV
         value: production
+      - key: GOOGLE_CLIENT_ID
+        sync: false  # Configura esto manualmente en el dashboard de Render
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false  # Configura esto manualmente en el dashboard de Render
+      - key: RENDER
+        value: true  # Indica que está en entorno Render
     plan: free
