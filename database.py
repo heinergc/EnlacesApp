@@ -61,6 +61,7 @@ def agregar_datos_ejemplo():
             Enlace(titulo='Coursera', url='https://www.coursera.org', categoria_id=4),
             Enlace(titulo='Khan Academy', url='https://www.khanacademy.org', categoria_id=4),
             Enlace(titulo='edX', url='https://www.edx.org', categoria_id=4),
+            Enlace(titulo='📊 Tutorial Método Simplex', url='http://localhost:5000/simplex', categoria_id=4),
 
             # Entretenimiento
             Enlace(titulo='YouTube', url='https://www.youtube.com', categoria_id=5),

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método Simplex - Tutorial Interactivo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+            color: #667eea;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 40px;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+
+        .section h3 {
+            color: #764ba2;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+        }
+
+        .section p, .section li {
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .section ul {
+            margin-left: 30px;
+        }
+
+        .formula {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 2px solid #667eea;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .example-box {
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #00838f;
+        }
+
+        .example-box h4 {
+            color: #00838f;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .tableau {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:hover {
+            background: #e9ecef;
+        }
+
+        .highlight-pivot {
+            background: #ffeb3b !important;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .highlight-row {
+            background: #c8e6c9 !important;
+        }
+
+        .highlight-col {
+            background: #ffcdd2 !important;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .step.active .step-circle {
+            background: #667eea;
+            color: white;
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .step.completed .step-circle {
+            background: #4caf50;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .step.active .step-label {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .explanation-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #e65100;
+        }
+
+        .explanation-box h4 {
+            color: #e65100;
+            margin-bottom: 10px;
+        }
+
+        .explanation-box p {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 5px solid #28a745;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 5px solid #17a2b8;
+        }
+
+        .math {
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-style: italic;
+        }
+
+        .interactive-problem {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 2px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Método Simplex</h1>
+            <p>Tutorial Interactivo de Investigación de Operaciones</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('teoria')">📚 Teoría</button>
+            <button class="nav-tab" onclick="showTab('pasos')">🔢 Pasos del Método</button>
+            <button class="nav-tab" onclick="showTab('ejemplo')">💡 Ejemplo Interactivo</button>
+            <button class="nav-tab" onclick="showTab('practica')">✍️ Practica</button>
+        </div>
+
+        <!-- TAB 1: TEORÍA -->
+        <div id="teoria" class="tab-content active">
+            <div class="section">
+                <h2>¿Qué es el Método Simplex?</h2>
+                <p>
+                    El <strong>Método Simplex</strong> es un algoritmo iterativo desarrollado por George Dantzig en 1947
+                    para resolver problemas de <strong>Programación Lineal (PL)</strong>. Es uno de los métodos más
+                    utilizados en Investigación de Operaciones para optimizar (maximizar o minimizar) una función objetivo
+                    sujeta a restricciones lineales.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>Componentes de un Problema de Programación Lineal</h2>
+
+                <h3>1. Función Objetivo</h3>
+                <p>Es la función que queremos maximizar o minimizar. Por ejemplo:</p>
+                <div class="formula">
+                    Maximizar: Z = c₁x₁ + c₂x₂ + ... + cₙxₙ
+                </div>
+                <p>Donde <span class="math">Z</span> es el valor que queremos optimizar,
+                   <span class="math">x₁, x₂, ..., xₙ</span> son las variables de decisión, y
+                   <span class="math">c₁, c₂, ..., cₙ</span> son los coeficientes.</p>
+
+                <h3>2. Restricciones</h3>
+                <p>Son las limitaciones del problema, expresadas como desigualdades o igualdades:</p>
+                <div class="formula">
+                    a₁₁x₁ + a₁₂x₂ + ... + a₁ₙxₙ ≤ b₁<br>
+                    a₂₁x₁ + a₂₂x₂ + ... + a₂ₙxₙ ≤ b₂<br>
+                    ...<br>
+                    aₘ₁x₁ + aₘ₂x₂ + ... + aₘₙxₙ ≤ bₘ
+                </div>
+
+                <h3>3. Restricciones de No Negatividad</h3>
+                <div class="formula">
+                    x₁, x₂, ..., xₙ ≥ 0
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Forma Estándar</h2>
+                <p>Para aplicar el Método Simplex, el problema debe estar en <strong>forma estándar</strong>:</p>
+                <ul>
+                    <li>La función objetivo debe ser de <strong>maximización</strong></li>
+                    <li>Todas las restricciones deben ser <strong>igualdades</strong></li>
+                    <li>Todas las variables deben ser <strong>no negativas</strong></li>
+                    <li>Los términos independientes (lado derecho) deben ser <strong>no negativos</strong></li>
+                </ul>
+
+                <div class="example-box">
+                    <h4>Conversión a Forma Estándar</h4>
+                    <p><strong>Problema original:</strong></p>
+                    <div class="formula">
+                        Maximizar: Z = 3x₁ + 2x₂<br>
+                        Sujeto a:<br>
+                        2x₁ + x₂ ≤ 18<br>
+                        2x₁ + 3x₂ ≤ 42<br>
+                        3x₁ + x₂ ≤ 24<br>
+                        x₁, x₂ ≥ 0
+                    </div>
+
+                    <p><strong>Forma estándar (agregando variables de holgura):</strong></p>
+                    <div class="formula">
+                        Maximizar: Z = 3x₁ + 2x₂ + 0s₁ + 0s₂ + 0s₃<br>
+                        Sujeto a:<br>
+                        2x₁ + x₂ + s₁ = 18<br>
+                        2x₁ + 3x₂ + s₂ = 42<br>
+                        3x₁ + x₂ + s₃ = 24<br>
+                        x₁, x₂, s₁, s₂, s₃ ≥ 0
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Variables de Holgura</h2>
+                <p>
+                    Las <strong>variables de holgura</strong> (slack variables) se agregan a las restricciones de tipo
+                    "≤" para convertirlas en igualdades. Representan los recursos no utilizados.
+                </p>
+                <p>Por ejemplo, si tenemos: <code>2x₁ + x₂ ≤ 18</code></p>
+                <p>Agregamos <code>s₁</code>: <code>2x₁ + x₂ + s₁ = 18</code></p>
+            </div>
+        </div>
+
+        <!-- TAB 2: PASOS DEL MÉTODO -->
+        <div id="pasos" class="tab-content">
+            <div class="section">
+                <h2>Algoritmo del Método Simplex</h2>
+                <p>El método Simplex sigue estos pasos iterativos:</p>
+            </div>
+
+            <div class="step-indicator">
+                <div class="step completed">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Forma Estándar</div>
+                </div>
+                <div class="step completed">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Tabla Inicial</div>
+                </div>
+                <div class="step completed">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Columna Pivote</div>
+                </div>
+                <div class="step completed">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">Fila Pivote</div>
+                </div>
+                <div class="step completed">
+                    <div class="step-circle">5</div>
+                    <div class="step-label">Pivoteo</div>
+                </div>
+                <div class="step completed">
+                    <div class="step-circle">6</div>
+                    <div class="step-label">Verificar</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Paso 1: Convertir a Forma Estándar</h3>
+                <p>Transformar el problema agregando variables de holgura, exceso o artificiales según corresponda.</p>
+            </div>
+
+            <div class="section">
+                <h3>Paso 2: Construir la Tabla Inicial (Tableau)</h3>
+                <p>Organizar los coeficientes en una tabla que incluye:</p>
+                <ul>
+                    <li><strong>Variables básicas:</strong> Las variables de holgura inicialmente</li>
+                    <li><strong>Columnas:</strong> Una por cada variable (decisión y holgura)</li>
+                    <li><strong>Filas:</strong> Una por cada restricción + fila Z</li>
+                    <li><strong>Lado derecho:</strong> Los valores bᵢ</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>Paso 3: Identificar la Columna Pivote (Variable Entrante)</h3>
+                <p>En la fila Z, buscar el <strong>valor más negativo</strong>. Esta columna indica la variable que entrará a la base.</p>
+                <div class="alert alert-info">
+                    <strong>Criterio:</strong> Si todos los valores en la fila Z son ≥ 0, la solución es óptima.
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Paso 4: Identificar la Fila Pivote (Variable Saliente)</h3>
+                <p>Calcular el <strong>cociente mínimo</strong> dividiendo el lado derecho entre los elementos positivos de la columna pivote:</p>
+                <div class="formula">
+                    Cociente = bᵢ / aᵢⱼ (donde aᵢⱼ > 0)
+                </div>
+                <p>La fila con el menor cociente positivo es la fila pivote.</p>
+            </div>
+
+            <div class="section">
+                <h3>Paso 5: Pivoteo (Operaciones de Fila)</h3>
+                <p>El <strong>elemento pivote</strong> es la intersección de la columna y fila pivote.</p>
+
+                <h4>Operaciones:</h4>
+                <ol>
+                    <li><strong>Normalizar fila pivote:</strong> Dividir toda la fila entre el elemento pivote para que este sea 1</li>
+                    <li><strong>Hacer ceros:</strong> Para cada otra fila (incluyendo Z), hacer operaciones de fila para que el elemento en la columna pivote sea 0</li>
+                </ol>
+
+                <div class="formula">
+                    Nueva fila = Fila actual - (coeficiente en columna pivote) × Nueva fila pivote
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Paso 6: Verificar Optimalidad</h3>
+                <p>Revisar la fila Z:</p>
+                <ul>
+                    <li>Si todos los coeficientes son ≥ 0: <strong>Solución óptima encontrada</strong></li>
+                    <li>Si hay valores negativos: <strong>Regresar al Paso 3</strong></li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>Interpretación de la Solución</h2>
+                <p>Cuando el algoritmo termina:</p>
+                <ul>
+                    <li><strong>Variables básicas:</strong> Sus valores están en el lado derecho</li>
+                    <li><strong>Variables no básicas:</strong> Tienen valor 0</li>
+                    <li><strong>Valor óptimo de Z:</strong> Está en la intersección de la fila Z con la columna del lado derecho</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TAB 3: EJEMPLO INTERACTIVO -->
+        <div id="ejemplo" class="tab-content">
+            <div class="section">
+                <h2>Ejemplo Resuelto Paso a Paso</h2>
+                <div class="example-box">
+                    <h4>Problema:</h4>
+                    <p>Una fábrica produce dos productos: A y B. Queremos maximizar las ganancias.</p>
+                    <div class="formula">
+                        Maximizar: Z = 3x₁ + 2x₂<br><br>
+                        Sujeto a:<br>
+                        2x₁ + x₂ ≤ 18  (Restricción de material)<br>
+                        2x₁ + 3x₂ ≤ 42  (Restricción de mano de obra)<br>
+                        3x₁ + x₂ ≤ 24  (Restricción de máquinas)<br>
+                        x₁, x₂ ≥ 0
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-indicator" id="stepIndicator">
+                <div class="step active">
+                    <div class="step-circle">0</div>
+                    <div class="step-label">Inicial</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Iteración 1</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Iteración 2</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">✓</div>
+                    <div class="step-label">Solución</div>
+                </div>
+            </div>
+
+            <div id="explanationBox" class="explanation-box">
+                <h4>Paso Actual: Tabla Inicial</h4>
+                <p>
+                    Hemos convertido el problema a forma estándar agregando variables de holgura s₁, s₂, s₃.
+                    La solución inicial básica es: x₁ = 0, x₂ = 0, s₁ = 18, s₂ = 42, s₃ = 24, con Z = 0.
+                </p>
+            </div>
+
+            <div id="tableauContainer" class="tableau">
+                <!-- La tabla se generará dinámicamente -->
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-secondary" onclick="previousStep()" id="btnPrev" disabled>
+                    ⬅️ Anterior
+                </button>
+                <button class="btn btn-primary" onclick="nextStep()" id="btnNext">
+                    Siguiente ➡️
+                </button>
+                <button class="btn btn-success" onclick="resetExample()">
+                    🔄 Reiniciar
+                </button>
+            </div>
+
+            <div id="solutionBox" style="display: none;">
+                <div class="alert alert-success">
+                    <h3>🎉 ¡Solución Óptima Encontrada!</h3>
+                    <p id="solutionText"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: PRÁCTICA -->
+        <div id="practica" class="tab-content">
+            <div class="section">
+                <h2>Ejemplos para Practicar</h2>
+                <p>Resuelve estos problemas aplicando el Método Simplex:</p>
+            </div>
+
+            <div class="example-box">
+                <h4>Ejercicio 1: Problema de Producción</h4>
+                <p>Una empresa fabrica sillas y mesas. Cada silla genera $40 de ganancia y cada mesa $30.</p>
+                <div class="formula">
+                    Maximizar: Z = 40x₁ + 30x₂<br><br>
+                    Sujeto a:<br>
+                    x₁ + x₂ ≤ 12  (Madera disponible)<br>
+                    2x₁ + x₂ ≤ 16  (Tiempo de ensamblaje)<br>
+                    x₁, x₂ ≥ 0
+                </div>
+                <p><strong>Pista:</strong> Agrega variables de holgura s₁ y s₂, luego construye la tabla inicial.</p>
+            </div>
+
+            <div class="example-box">
+                <h4>Ejercicio 2: Problema de Dieta</h4>
+                <p>Un nutricionista quiere minimizar el costo de una dieta que cumpla con requerimientos nutricionales.</p>
+                <div class="formula">
+                    Minimizar: Z = 2x₁ + 3x₂<br><br>
+                    Sujeto a:<br>
+                    4x₁ + 2x₂ ≥ 20  (Proteínas)<br>
+                    2x₁ + 5x₂ ≥ 30  (Vitaminas)<br>
+                    x₁, x₂ ≥ 0
+                </div>
+                <p><strong>Nota:</strong> Para minimización, convierte a maximización: Maximizar Z' = -2x₁ - 3x₂</p>
+            </div>
+
+            <div class="example-box">
+                <h4>Ejercicio 3: Problema de Transporte</h4>
+                <div class="formula">
+                    Maximizar: Z = 5x₁ + 4x₂ + 6x₃<br><br>
+                    Sujeto a:<br>
+                    x₁ + x₂ + x₃ ≤ 100<br>
+                    2x₁ + x₂ + 3x₃ ≤ 200<br>
+                    x₁ + 2x₂ + x₃ ≤ 150<br>
+                    x₁, x₂, x₃ ≥ 0
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Recursos Adicionales</h2>
+                <ul>
+                    <li>📖 Libro recomendado: "Investigación de Operaciones" - Hamdy Taha</li>
+                    <li>📖 Libro recomendado: "Introduction to Operations Research" - Hillier & Lieberman</li>
+                    <li>💻 Software: Use Excel Solver o LINDO para verificar sus resultados</li>
+                    <li>🎓 Practique con diferentes tipos de problemas: producción, transporte, asignación, dieta</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>Consejos para el Éxito</h2>
+                <ul>
+                    <li>✅ Siempre verifique que el problema esté en forma estándar antes de empezar</li>
+                    <li>✅ Revise cuidadosamente los cálculos en cada iteración</li>
+                    <li>✅ El elemento pivote nunca debe ser cero o negativo</li>
+                    <li>✅ Si hay empates en el cociente mínimo, elija arbitrariamente</li>
+                    <li>✅ Practique con problemas pequeños antes de abordar problemas grandes</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>📚 Tutorial Interactivo del Método Simplex | Investigación de Operaciones para Ingeniería</p>
+            <p>Desarrollado para facilitar el aprendizaje de técnicas de optimización</p>
+        </div>
+    </div>
+
+    <script>
+        // Estado del ejemplo interactivo
+        let currentStep = 0;
+        const maxSteps = 3;
+
+        // Datos de las tablas para cada iteración
+        const tableaux = [
+            {
+                title: "Tabla Inicial",
+                explanation: "Hemos convertido el problema a forma estándar agregando variables de holgura s₁, s₂, s₃. La solución inicial básica es: x₁ = 0, x₂ = 0, s₁ = 18, s₂ = 42, s₃ = 24, con Z = 0.",
+                headers: ['Base', 'x₁', 'x₂', 's₁', 's₂', 's₃', 'LD', 'Cociente'],
+                rows: [
+                    ['s₁', 2, 1, 1, 0, 0, 18, '18/2=9'],
+                    ['s₂', 2, 3, 0, 1, 0, 42, '42/2=21'],
+                    ['s₃', 3, 1, 0, 0, 1, 24, '24/3=8 ⭐'],
+                    ['Z', -3, -2, 0, 0, 0, 0, '']
+                ],
+                pivot: {row: 2, col: 1},
+                highlights: {
+                    pivotCol: 1,
+                    pivotRow: 2,
+                    pivotCell: {row: 2, col: 1}
+                }
+            },
+            {
+                title: "Iteración 1",
+                explanation: "Variable entrante: x₁ (columna con -3, el más negativo). Variable saliente: s₃ (cociente mínimo 24/3 = 8). Pivote = 3. Dividimos la fila s₃ entre 3 y hacemos ceros en la columna x₁.",
+                headers: ['Base', 'x₁', 'x₂', 's₁', 's₂', 's₃', 'LD', 'Cociente'],
+                rows: [
+                    ['s₁', 0, 1/3, 1, 0, -2/3, 2, '2/(1/3)=6'],
+                    ['s₂', 0, 7/3, 0, 1, -2/3, 26, '26/(7/3)≈11.1'],
+                    ['x₁', 1, 1/3, 0, 0, 1/3, 8, '—'],
+                    ['Z', 0, -1, 0, 0, 1, 24, '']
+                ],
+                pivot: {row: 0, col: 2},
+                highlights: {
+                    pivotCol: 2,
+                    pivotRow: 0,
+                    pivotCell: {row: 0, col: 2}
+                }
+            },
+            {
+                title: "Iteración 2",
+                explanation: "Variable entrante: x₂ (columna con -1). Variable saliente: s₁ (cociente mínimo 2/(1/3) = 6). Pivote = 1/3. Realizamos las operaciones de fila correspondientes.",
+                headers: ['Base', 'x₁', 'x₂', 's₁', 's₂', 's₃', 'LD', 'Cociente'],
+                rows: [
+                    ['x₂', 0, 1, 3, 0, -2, 6, '—'],
+                    ['s₂', 0, 0, -7, 1, 4, 12, '—'],
+                    ['x₁', 1, 0, -1, 0, 1, 6, '—'],
+                    ['Z', 0, 0, 3, 0, -1, 30, '']
+                ],
+                pivot: null,
+                highlights: null
+            },
+            {
+                title: "Solución Óptima",
+                explanation: "¡Todos los coeficientes en la fila Z son ≥ 0! Hemos encontrado la solución óptima.",
+                headers: ['Base', 'x₁', 'x₂', 's₁', 's₂', 's₃', 'LD'],
+                rows: [
+                    ['x₂', 0, 1, 3, 0, -2, 6],
+                    ['s₂', 0, 0, -7, 1, 4, 12],
+                    ['x₁', 1, 0, -1, 0, 1, 6],
+                    ['Z', 0, 0, 3, 0, -1, 30]
+                ],
+                pivot: null,
+                highlights: null,
+                solution: "x₁ = 6 unidades de producto A<br>x₂ = 6 unidades de producto B<br>Z = 30 (ganancia máxima)<br><br>Recursos: s₁ = 0 (material totalmente usado), s₂ = 12 (12 horas de mano de obra sobrantes), s₃ = 0 (máquinas totalmente usadas)"
+            }
+        ];
+
+        // Función para cambiar de tab
+        function showTab(tabName) {
+            // Ocultar todos los contenidos
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Quitar active de todos los botones
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Mostrar el tab seleccionado
+            document.getElementById(tabName).classList.add('active');
+
+            // Activar el botón correspondiente
+            event.target.classList.add('active');
+        }
+
+        // Función para renderizar la tabla
+        function renderTableau(stepIndex) {
+            const tableau = tableaux[stepIndex];
+            const container = document.getElementById('tableauContainer');
+
+            let html = `<h3>${tableau.title}</h3><table>`;
+
+            // Headers
+            html += '<thead><tr>';
+            tableau.headers.forEach(header => {
+                html += `<th>${header}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            // Rows
+            tableau.rows.forEach((row, rowIndex) => {
+                html += '<tr>';
+                row.forEach((cell, colIndex) => {
+                    let cellClass = '';
+
+                    // Highlight pivot elements
+                    if (tableau.highlights) {
+                        if (rowIndex === tableau.highlights.pivotRow && colIndex === tableau.highlights.pivotCol) {
+                            cellClass = 'highlight-pivot';
+                        } else if (colIndex === tableau.highlights.pivotCol && rowIndex !== tableau.rows.length - 1) {
+                            cellClass = 'highlight-col';
+                        } else if (rowIndex === tableau.highlights.pivotRow) {
+                            cellClass = 'highlight-row';
+                        }
+                    }
+
+                    // Format numbers
+                    let displayValue = cell;
+                    if (typeof cell === 'number') {
+                        displayValue = Math.abs(cell) < 0.0001 ? 0 : cell.toFixed(2);
+                        // Remove trailing zeros
+                        displayValue = parseFloat(displayValue);
+                    }
+
+                    html += `<td class="${cellClass}">${displayValue}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            // Update explanation
+            document.getElementById('explanationBox').innerHTML = `
+                <h4>Paso ${stepIndex}: ${tableau.title}</h4>
+                <p>${tableau.explanation}</p>
+            `;
+
+            // Update step indicator
+            updateStepIndicator(stepIndex);
+
+            // Check if solution
+            if (stepIndex === maxSteps) {
+                document.getElementById('solutionBox').style.display = 'block';
+                document.getElementById('solutionText').innerHTML = tableau.solution;
+            } else {
+                document.getElementById('solutionBox').style.display = 'none';
+            }
+        }
+
+        // Actualizar indicador de pasos
+        function updateStepIndicator(stepIndex) {
+            const steps = document.querySelectorAll('#stepIndicator .step');
+            steps.forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                if (index < stepIndex) {
+                    step.classList.add('completed');
+                } else if (index === stepIndex) {
+                    step.classList.add('active');
+                }
+            });
+        }
+
+        // Navegación
+        function nextStep() {
+            if (currentStep < maxSteps) {
+                currentStep++;
+                renderTableau(currentStep);
+                updateButtons();
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                renderTableau(currentStep);
+                updateButtons();
+            }
+        }
+
+        function resetExample() {
+            currentStep = 0;
+            renderTableau(currentStep);
+            updateButtons();
+        }
+
+        function updateButtons() {
+            document.getElementById('btnPrev').disabled = currentStep === 0;
+            document.getElementById('btnNext').disabled = currentStep === maxSteps;
+
+            if (currentStep === maxSteps) {
+                document.getElementById('btnNext').textContent = '✓ Completado';
+            } else {
+                document.getElementById('btnNext').textContent = 'Siguiente ➡️';
+            }
+        }
+
+        // Inicializar
+        window.onload = function() {
+            renderTableau(0);
+            updateButtons();
+        };
+    </script>
+</body>
+</html>

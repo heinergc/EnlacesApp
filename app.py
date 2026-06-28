@@ -2,7 +2,7 @@
 Aplicación Flask para la gestión de enlaces web.
 """
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from models import db, Categoria, Enlace
 from database import init_db
 
@@ -31,6 +31,12 @@ def categoria_detalle(categoria_id):
     """Página de detalle de una categoría específica."""
     categoria = Categoria.query.get_or_404(categoria_id)
     return render_template('categoria.html', categoria=categoria)
+
+
+@app.route('/simplex')
+def metodo_simplex():
+    """Tutorial interactivo del Método Simplex."""
+    return send_from_directory('static', 'metodo-simplex.html')
 
 
 # ========== API ENDPOINTS - CATEGORÍAS ==========
