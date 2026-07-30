@@ -26,6 +26,12 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/dashboard')
+def dashboard():
+    """Dashboard de estadísticas y análisis."""
+    return render_template('dashboard.html')
+
+
 @app.route('/categoria/<int:categoria_id>')
 def categoria_detalle(categoria_id):
     """Página de detalle de una categoría específica."""
@@ -349,6 +355,236 @@ def eliminar_enlace(enlace_id):
         return jsonify({
             'success': True,
             'message': f'Enlace "{titulo}" eliminado exitosamente'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+# ========== API ENDPOINTS - FUNCIONES AVANZADAS ==========
+
+@app.route('/api/enlaces/<int:enlace_id>/favorito', methods=['POST'])
+def toggle_favorito(enlace_id):
+    """Marca o desmarca un enlace como favorito."""
+    try:
+        enlace = Enlace.query.get_or_404(enlace_id)
+        enlace.favorito = not enlace.favorito
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'favorito': enlace.favorito,
+            'message': f'Enlace {"agregado a" if enlace.favorito else "removido de"} favoritos'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/enlaces/<int:enlace_id>/click', methods=['POST'])
+def registrar_click(enlace_id):
+    """Registra un click en un enlace."""
+    try:
+        from datetime import datetime as dt
+        enlace = Enlace.query.get_or_404(enlace_id)
+        enlace.clicks += 1
+        enlace.fecha_ultimo_acceso = dt.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'clicks': enlace.clicks
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/estadisticas', methods=['GET'])
+def obtener_estadisticas():
+    """Obtiene estadísticas generales de la aplicación."""
+    try:
+        total_categorias = Categoria.query.count()
+        total_enlaces = Enlace.query.count()
+        total_favoritos = Enlace.query.filter_by(favorito=True).count()
+        total_clicks = db.session.query(db.func.sum(Enlace.clicks)).scalar() or 0
+
+        # Enlaces más visitados (top 10)
+        top_enlaces = Enlace.query.order_by(Enlace.clicks.desc()).limit(10).all()
+
+        # Enlaces recientes (últimos 10)
+        enlaces_recientes = Enlace.query.order_by(Enlace.fecha_creacion.desc()).limit(10).all()
+
+        # Categorías con más enlaces
+        categorias_stats = db.session.query(
+            Categoria.nombre,
+            Categoria.icono,
+            db.func.count(Enlace.id).label('cantidad')
+        ).join(Enlace).group_by(Categoria.id).order_by(db.text('cantidad DESC')).limit(5).all()
+
+        return jsonify({
+            'success': True,
+            'estadisticas': {
+                'total_categorias': total_categorias,
+                'total_enlaces': total_enlaces,
+                'total_favoritos': total_favoritos,
+                'total_clicks': total_clicks,
+                'top_enlaces': [e.to_dict() for e in top_enlaces],
+                'enlaces_recientes': [e.to_dict() for e in enlaces_recientes],
+                'categorias_populares': [
+                    {'nombre': c[0], 'icono': c[1], 'cantidad': c[2]}
+                    for c in categorias_stats
+                ]
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/buscar', methods=['GET'])
+def buscar_enlaces():
+    """Búsqueda global de enlaces por título, URL o descripción."""
+    try:
+        query = request.args.get('q', '').strip()
+
+        if not query:
+            return jsonify({
+                'success': False,
+                'error': 'Parámetro de búsqueda requerido'
+            }), 400
+
+        # Búsqueda case-insensitive en título, URL y descripción
+        resultados = Enlace.query.filter(
+            db.or_(
+                Enlace.titulo.ilike(f'%{query}%'),
+                Enlace.url.ilike(f'%{query}%'),
+                Enlace.descripcion.ilike(f'%{query}%'),
+                Enlace.tags.ilike(f'%{query}%')
+            )
+        ).all()
+
+        return jsonify({
+            'success': True,
+            'resultados': [e.to_dict() for e in resultados],
+            'cantidad': len(resultados)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/favoritos', methods=['GET'])
+def obtener_favoritos():
+    """Obtiene todos los enlaces marcados como favoritos."""
+    try:
+        favoritos = Enlace.query.filter_by(favorito=True).order_by(Enlace.fecha_creacion.desc()).all()
+        return jsonify({
+            'success': True,
+            'favoritos': [e.to_dict() for e in favoritos]
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/exportar', methods=['GET'])
+def exportar_enlaces():
+    """Exporta todos los enlaces en formato JSON."""
+    try:
+        categorias = Categoria.query.all()
+        data = {
+            'version': '1.0',
+            'fecha_exportacion': datetime.utcnow().isoformat(),
+            'categorias': [
+                {
+                    'nombre': cat.nombre,
+                    'icono': cat.icono,
+                    'color': cat.color,
+                    'enlaces': [e.to_dict() for e in cat.enlaces]
+                }
+                for cat in categorias
+            ]
+        }
+
+        return jsonify({
+            'success': True,
+            'data': data
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/importar', methods=['POST'])
+def importar_enlaces():
+    """Importa enlaces desde un archivo JSON."""
+    try:
+        data = request.get_json()
+
+        if not data or 'categorias' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Formato de datos inválido'
+            }), 400
+
+        categorias_importadas = 0
+        enlaces_importados = 0
+
+        for cat_data in data['categorias']:
+            # Buscar o crear categoría
+            categoria = Categoria.query.filter_by(nombre=cat_data['nombre']).first()
+            if not categoria:
+                categoria = Categoria(
+                    nombre=cat_data['nombre'],
+                    icono=cat_data.get('icono', '📁'),
+                    color=cat_data.get('color', '#667eea')
+                )
+                db.session.add(categoria)
+                categorias_importadas += 1
+
+            db.session.flush()  # Para obtener el ID de la categoría
+
+            # Importar enlaces
+            for enlace_data in cat_data.get('enlaces', []):
+                # Evitar duplicados por URL
+                if not Enlace.query.filter_by(url=enlace_data['url']).first():
+                    enlace = Enlace(
+                        titulo=enlace_data['titulo'],
+                        url=enlace_data['url'],
+                        descripcion=enlace_data.get('descripcion', ''),
+                        categoria_id=categoria.id,
+                        favorito=enlace_data.get('favorito', False),
+                        tags=','.join(enlace_data.get('tags', []))
+                    )
+                    db.session.add(enlace)
+                    enlaces_importados += 1
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'{categorias_importadas} categorías y {enlaces_importados} enlaces importados',
+            'categorias_importadas': categorias_importadas,
+            'enlaces_importados': enlaces_importados
         })
 
     except Exception as e:

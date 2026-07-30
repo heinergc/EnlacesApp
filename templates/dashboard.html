@@ -1,0 +1,582 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gestión de Enlaces{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
+        height: 100%;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-number {
+        font-size: 3rem;
+        font-weight: 700;
+        margin: 15px 0;
+    }
+
+    .stat-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .stat-icon {
+        font-size: 2.5rem;
+        opacity: 0.8;
+    }
+
+    .quick-link-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+    .quick-link-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .click-badge {
+        background: #667eea;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .favorite-badge {
+        color: #ffc107;
+        font-size: 1.2rem;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .search-box-global {
+        position: relative;
+        margin-bottom: 30px;
+    }
+
+    .search-box-global input {
+        width: 100%;
+        padding: 15px 50px 15px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 50px;
+        font-size: 1.1rem;
+        transition: all 0.3s;
+    }
+
+    .search-box-global input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+
+    .search-box-global .search-icon {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.5rem;
+        color: #667eea;
+    }
+
+    .search-results {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-speedometer2 text-primary"></i>
+                Dashboard de Estadísticas
+            </h1>
+            <p class="text-muted">Análisis completo de tus enlaces y categorías</p>
+        </div>
+    </div>
+
+    <!-- Búsqueda Global -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="search-box-global">
+                <input type="text" id="searchGlobal" placeholder="🔍 Buscar en todos tus enlaces..." autocomplete="off">
+                <span class="search-icon"><i class="bi bi-search"></i></span>
+            </div>
+            <div id="searchResults" class="search-results" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Cards -->
+    <div class="row mb-4" id="statsCards">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="bi bi-folder-fill"></i></div>
+                <div class="stat-number" id="totalCategorias">0</div>
+                <div class="stat-label">Categorías</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="stat-icon"><i class="bi bi-link-45deg"></i></div>
+                <div class="stat-number" id="totalEnlaces">0</div>
+                <div class="stat-label">Enlaces</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="stat-icon"><i class="bi bi-star-fill"></i></div>
+                <div class="stat-number" id="totalFavoritos">0</div>
+                <div class="stat-label">Favoritos</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="stat-icon"><i class="bi bi-mouse-fill"></i></div>
+                <div class="stat-number" id="totalClicks">0</div>
+                <div class="stat-label">Clicks Totales</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos y Listas -->
+    <div class="row">
+        <!-- Enlaces Más Visitados -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h3 class="mb-3">
+                    <i class="bi bi-graph-up text-primary"></i>
+                    Top 10 Enlaces Más Visitados
+                </h3>
+                <div id="topEnlacesContainer"></div>
+            </div>
+        </div>
+
+        <!-- Enlaces Favoritos -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h3 class="mb-3">
+                    <i class="bi bi-star-fill text-warning"></i>
+                    Enlaces Favoritos
+                </h3>
+                <div id="favoritosContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Categorías Populares -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h3 class="mb-3">
+                    <i class="bi bi-pie-chart-fill text-primary"></i>
+                    Categorías Más Populares
+                </h3>
+                <div id="categoriasPopularesContainer"></div>
+            </div>
+        </div>
+
+        <!-- Enlaces Recientes -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h3 class="mb-3">
+                    <i class="bi bi-clock-history text-info"></i>
+                    Enlaces Recientes
+                </h3>
+                <div id="enlacesRecientesContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="chart-container">
+                <h3 class="mb-3">
+                    <i class="bi bi-lightning-fill text-warning"></i>
+                    Acciones Rápidas
+                </h3>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-outline-primary w-100" onclick="window.location.href='/'">
+                            <i class="bi bi-grid-3x3-gap me-2"></i>Ver Categorías
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-outline-success w-100" onclick="exportarEnlaces()">
+                            <i class="bi bi-download me-2"></i>Exportar Datos
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#modalImportar">
+                            <i class="bi bi-upload me-2"></i>Importar Datos
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-outline-warning w-100" onclick="mostrarSoloFavoritos()">
+                            <i class="bi bi-star-fill me-2"></i>Ver Solo Favoritos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Importar -->
+<div class="modal fade" id="modalImportar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-upload me-2"></i>Importar Enlaces
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Pega aquí el JSON exportado previamente:</p>
+                <textarea class="form-control" id="importData" rows="10" placeholder='{"categorias": [...]}'></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="importarEnlaces()">
+                    <i class="bi bi-upload me-2"></i>Importar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let estadisticas = null;
+let searchTimeout = null;
+
+// Cargar estadísticas al inicio
+document.addEventListener('DOMContentLoaded', function() {
+    cargarEstadisticas();
+    cargarFavoritos();
+
+    // Búsqueda en tiempo real
+    document.getElementById('searchGlobal').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+
+        if (query.length < 2) {
+            document.getElementById('searchResults').style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => buscarGlobal(query), 300);
+    });
+});
+
+// Cargar estadísticas generales
+async function cargarEstadisticas() {
+    try {
+        const response = await fetch('/api/estadisticas');
+        const data = await response.json();
+
+        if (data.success) {
+            estadisticas = data.estadisticas;
+            mostrarEstadisticas();
+        }
+    } catch (error) {
+        console.error('Error al cargar estadísticas:', error);
+        mostrarNotificacion('Error al cargar estadísticas', 'error');
+    }
+}
+
+// Mostrar estadísticas en las cards
+function mostrarEstadisticas() {
+    document.getElementById('totalCategorias').textContent = estadisticas.total_categorias;
+    document.getElementById('totalEnlaces').textContent = estadisticas.total_enlaces;
+    document.getElementById('totalFavoritos').textContent = estadisticas.total_favoritos;
+    document.getElementById('totalClicks').textContent = estadisticas.total_clicks;
+
+    mostrarTopEnlaces();
+    mostrarCategoriasPopulares();
+    mostrarEnlacesRecientes();
+}
+
+// Mostrar top enlaces
+function mostrarTopEnlaces() {
+    const container = document.getElementById('topEnlacesContainer');
+
+    if (estadisticas.top_enlaces.length === 0) {
+        container.innerHTML = '<div class="no-results"><i class="bi bi-inbox fs-1"></i><p>No hay enlaces visitados todavía</p></div>';
+        return;
+    }
+
+    container.innerHTML = estadisticas.top_enlaces.slice(0, 10).map(enlace => `
+        <div class="quick-link-card" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                        ${enlace.favorito ? '<i class="bi bi-star-fill favorite-badge"></i> ' : ''}
+                        ${enlace.titulo}
+                    </h6>
+                    <small class="text-muted">${truncarTexto(enlace.url, 50)}</small>
+                </div>
+                <div>
+                    <span class="click-badge">${enlace.clicks} clicks</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Mostrar categorías populares
+function mostrarCategoriasPopulares() {
+    const container = document.getElementById('categoriasPopularesContainer');
+
+    if (estadisticas.categorias_populares.length === 0) {
+        container.innerHTML = '<div class="no-results"><i class="bi bi-inbox fs-1"></i><p>No hay categorías todavía</p></div>';
+        return;
+    }
+
+    container.innerHTML = estadisticas.categorias_populares.map(cat => `
+        <div class="quick-link-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0">
+                        <span style="font-size: 1.5rem;">${cat.icono}</span>
+                        ${cat.nombre}
+                    </h6>
+                </div>
+                <div>
+                    <span class="badge bg-primary rounded-pill">${cat.cantidad} enlaces</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Mostrar enlaces recientes
+function mostrarEnlacesRecientes() {
+    const container = document.getElementById('enlacesRecientesContainer');
+
+    if (estadisticas.enlaces_recientes.length === 0) {
+        container.innerHTML = '<div class="no-results"><i class="bi bi-inbox fs-1"></i><p>No hay enlaces todavía</p></div>';
+        return;
+    }
+
+    container.innerHTML = estadisticas.enlaces_recientes.slice(0, 10).map(enlace => `
+        <div class="quick-link-card" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                        ${enlace.favorito ? '<i class="bi bi-star-fill favorite-badge"></i> ' : ''}
+                        ${enlace.titulo}
+                    </h6>
+                    <small class="text-muted">
+                        <i class="bi bi-folder-fill"></i> ${enlace.categoria_nombre}
+                    </small>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Cargar favoritos
+async function cargarFavoritos() {
+    try {
+        const response = await fetch('/api/favoritos');
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarFavoritos(data.favoritos);
+        }
+    } catch (error) {
+        console.error('Error al cargar favoritos:', error);
+    }
+}
+
+// Mostrar favoritos
+function mostrarFavoritos(favoritos) {
+    const container = document.getElementById('favoritosContainer');
+
+    if (favoritos.length === 0) {
+        container.innerHTML = '<div class="no-results"><i class="bi bi-star fs-1"></i><p>No tienes favoritos todavía</p></div>';
+        return;
+    }
+
+    container.innerHTML = favoritos.slice(0, 10).map(enlace => `
+        <div class="quick-link-card" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                        <i class="bi bi-star-fill favorite-badge"></i>
+                        ${enlace.titulo}
+                    </h6>
+                    <small class="text-muted">
+                        <i class="bi bi-folder-fill"></i> ${enlace.categoria_nombre}
+                    </small>
+                </div>
+                <div>
+                    <span class="badge bg-secondary">${enlace.clicks} clicks</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Búsqueda global
+async function buscarGlobal(query) {
+    try {
+        const response = await fetch(`/api/buscar?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarResultadosBusqueda(data.resultados);
+        }
+    } catch (error) {
+        console.error('Error en búsqueda:', error);
+    }
+}
+
+// Mostrar resultados de búsqueda
+function mostrarResultadosBusqueda(resultados) {
+    const container = document.getElementById('searchResults');
+
+    if (resultados.length === 0) {
+        container.innerHTML = '<div class="alert alert-info mt-3">No se encontraron resultados</div>';
+        container.style.display = 'block';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="alert alert-success mt-3">
+            <strong>${resultados.length}</strong> resultado(s) encontrado(s)
+        </div>
+        ${resultados.map(enlace => `
+            <div class="quick-link-card" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">
+                            ${enlace.favorito ? '<i class="bi bi-star-fill favorite-badge"></i> ' : ''}
+                            ${enlace.titulo}
+                        </h6>
+                        <small class="text-muted">${enlace.url}</small><br>
+                        <small class="text-muted">
+                            <i class="bi bi-folder-fill"></i> ${enlace.categoria_nombre}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `).join('')}
+    `;
+    container.style.display = 'block';
+}
+
+// Abrir enlace y registrar click
+async function abrirEnlace(id, url) {
+    try {
+        await fetch(`/api/enlaces/${id}/click`, { method: 'POST' });
+        window.open(url, '_blank');
+        cargarEstadisticas(); // Recargar stats
+    } catch (error) {
+        console.error('Error al registrar click:', error);
+        window.open(url, '_blank');
+    }
+}
+
+// Exportar enlaces
+async function exportarEnlaces() {
+    try {
+        const response = await fetch('/api/exportar');
+        const data = await response.json();
+
+        if (data.success) {
+            const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `enlaces_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+
+            mostrarNotificacion('Datos exportados exitosamente', 'success');
+        }
+    } catch (error) {
+        console.error('Error al exportar:', error);
+        mostrarNotificacion('Error al exportar datos', 'error');
+    }
+}
+
+// Importar enlaces
+async function importarEnlaces() {
+    try {
+        const jsonData = document.getElementById('importData').value.trim();
+
+        if (!jsonData) {
+            mostrarNotificacion('Por favor pega el JSON a importar', 'warning');
+            return;
+        }
+
+        const data = JSON.parse(jsonData);
+
+        const response = await fetch('/api/importar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            mostrarNotificacion(result.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('modalImportar')).hide();
+            cargarEstadisticas();
+        } else {
+            mostrarNotificacion(result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error al importar:', error);
+        mostrarNotificacion('JSON inválido o error al importar', 'error');
+    }
+}
+
+// Mostrar solo favoritos
+function mostrarSoloFavoritos() {
+    window.location.href = '/#favoritos';
+}
+
+// Truncar texto
+function truncarTexto(texto, longitud) {
+    if (texto.length <= longitud) return texto;
+    return texto.substring(0, longitud) + '...';
+}
+</script>
+{% endblock %}
