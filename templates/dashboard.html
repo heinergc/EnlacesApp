@@ -2,277 +2,163 @@
 
 {% block title %}Dashboard - Gestión de Enlaces{% endblock %}
 
-{% block extra_css %}
-<style>
-    .stat-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 15px;
-        padding: 25px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s;
-        height: 100%;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    }
-
-    .stat-number {
-        font-size: 3rem;
-        font-weight: 700;
-        margin: 15px 0;
-    }
-
-    .stat-label {
-        font-size: 1.1rem;
-        opacity: 0.9;
-    }
-
-    .stat-icon {
-        font-size: 2.5rem;
-        opacity: 0.8;
-    }
-
-    .quick-link-card {
-        background: white;
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 10px;
-        border-left: 4px solid #667eea;
-        transition: all 0.3s;
-        cursor: pointer;
-    }
-
-    .quick-link-card:hover {
-        transform: translateX(5px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .click-badge {
-        background: #667eea;
-        color: white;
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-
-    .favorite-badge {
-        color: #ffc107;
-        font-size: 1.2rem;
-    }
-
-    .chart-container {
-        background: white;
-        border-radius: 15px;
-        padding: 25px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-    }
-
-    .search-box-global {
-        position: relative;
-        margin-bottom: 30px;
-    }
-
-    .search-box-global input {
-        width: 100%;
-        padding: 15px 50px 15px 20px;
-        border: 2px solid #e0e0e0;
-        border-radius: 50px;
-        font-size: 1.1rem;
-        transition: all 0.3s;
-    }
-
-    .search-box-global input:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
-    }
-
-    .search-box-global .search-icon {
-        position: absolute;
-        right: 20px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 1.5rem;
-        color: #667eea;
-    }
-
-    .search-results {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    .no-results {
-        text-align: center;
-        padding: 40px;
-        color: #999;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <h1 class="display-5 fw-bold">
-                <i class="bi bi-speedometer2 text-primary"></i>
-                Dashboard de Estadísticas
-            </h1>
-            <p class="text-muted">Análisis completo de tus enlaces y categorías</p>
-        </div>
-    </div>
-
+<div class="space-y-8">
     <!-- Búsqueda Global -->
-    <div class="row mb-4">
-        <div class="col">
-            <div class="search-box-global">
-                <input type="text" id="searchGlobal" placeholder="🔍 Buscar en todos tus enlaces..." autocomplete="off">
-                <span class="search-icon"><i class="bi bi-search"></i></span>
-            </div>
-            <div id="searchResults" class="search-results" style="display: none;"></div>
+    <div class="relative">
+        <div class="absolute left-3 top-1/2 -translate-y-1/2">
+            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
         </div>
+        <input
+            type="text"
+            id="searchGlobal"
+            placeholder="🔍 Buscar en todos tus enlaces..."
+            class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base"
+            oninput="handleSearch()"
+        />
+        <div id="searchResults" class="hidden absolute top-full mt-2 w-full bg-white rounded-lg shadow-lg border border-slate-200 z-50 max-h-96 overflow-y-auto"></div>
     </div>
 
-    <!-- Estadísticas Cards -->
-    <div class="row mb-4" id="statsCards">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="bi bi-folder-fill"></i></div>
-                <div class="stat-number" id="totalCategorias">0</div>
-                <div class="stat-label">Categorías</div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <div class="stat-icon"><i class="bi bi-link-45deg"></i></div>
-                <div class="stat-number" id="totalEnlaces">0</div>
-                <div class="stat-label">Enlaces</div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                <div class="stat-icon"><i class="bi bi-star-fill"></i></div>
-                <div class="stat-number" id="totalFavoritos">0</div>
-                <div class="stat-label">Favoritos</div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-                <div class="stat-icon"><i class="bi bi-mouse-fill"></i></div>
-                <div class="stat-number" id="totalClicks">0</div>
-                <div class="stat-label">Clicks Totales</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Gráficos y Listas -->
-    <div class="row">
-        <!-- Enlaces Más Visitados -->
-        <div class="col-lg-6 mb-4">
-            <div class="chart-container">
-                <h3 class="mb-3">
-                    <i class="bi bi-graph-up text-primary"></i>
-                    Top 10 Enlaces Más Visitados
-                </h3>
-                <div id="topEnlacesContainer"></div>
-            </div>
-        </div>
-
-        <!-- Enlaces Favoritos -->
-        <div class="col-lg-6 mb-4">
-            <div class="chart-container">
-                <h3 class="mb-3">
-                    <i class="bi bi-star-fill text-warning"></i>
-                    Enlaces Favoritos
-                </h3>
-                <div id="favoritosContainer"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Categorías Populares -->
-        <div class="col-lg-6 mb-4">
-            <div class="chart-container">
-                <h3 class="mb-3">
-                    <i class="bi bi-pie-chart-fill text-primary"></i>
-                    Categorías Más Populares
-                </h3>
-                <div id="categoriasPopularesContainer"></div>
-            </div>
-        </div>
-
-        <!-- Enlaces Recientes -->
-        <div class="col-lg-6 mb-4">
-            <div class="chart-container">
-                <h3 class="mb-3">
-                    <i class="bi bi-clock-history text-info"></i>
-                    Enlaces Recientes
-                </h3>
-                <div id="enlacesRecientesContainer"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Acciones Rápidas -->
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="chart-container">
-                <h3 class="mb-3">
-                    <i class="bi bi-lightning-fill text-warning"></i>
-                    Acciones Rápidas
-                </h3>
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <button class="btn btn-outline-primary w-100" onclick="window.location.href='/'">
-                            <i class="bi bi-grid-3x3-gap me-2"></i>Ver Categorías
-                        </button>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <button class="btn btn-outline-success w-100" onclick="exportarEnlaces()">
-                            <i class="bi bi-download me-2"></i>Exportar Datos
-                        </button>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <button class="btn btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#modalImportar">
-                            <i class="bi bi-upload me-2"></i>Importar Datos
-                        </button>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <button class="btn btn-outline-warning w-100" onclick="mostrarSoloFavoritos()">
-                            <i class="bi bi-star-fill me-2"></i>Ver Solo Favoritos
-                        </button>
-                    </div>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-medium text-slate-600">Categorías</p>
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                    </svg>
                 </div>
+                <div class="text-3xl font-bold text-slate-900" id="totalCategorias">0</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-medium text-slate-600">Enlaces</p>
+                    <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <div class="text-3xl font-bold text-slate-900" id="totalEnlaces">0</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-medium text-slate-600">Favoritos</p>
+                    <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                </div>
+                <div class="text-3xl font-bold text-slate-900" id="totalFavoritos">0</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm border-l-4 border-l-violet-500 hover:shadow-md transition-shadow">
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm font-medium text-slate-600">Clicks Totales</p>
+                    <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
+                    </svg>
+                </div>
+                <div class="text-3xl font-bold text-slate-900" id="totalClicks">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-3">
+        <button onclick="exportData()" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Exportar Datos
+        </button>
+
+        <button onclick="openDialog('importDialog')" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+            Importar Datos
+        </button>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Top Links -->
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm">
+            <div class="p-6 border-b border-slate-200">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                    <h3 class="text-lg font-bold text-slate-900">Enlaces Más Visitados</h3>
+                </div>
+                <p class="text-sm text-slate-500">Top 10 enlaces por número de clicks</p>
+            </div>
+            <div class="p-6 space-y-2" id="topEnlacesContainer"></div>
+        </div>
+
+        <!-- Favorites -->
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm">
+            <div class="p-6 border-b border-slate-200">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <h3 class="text-lg font-bold text-slate-900">Enlaces Favoritos</h3>
+                </div>
+                <p class="text-sm text-slate-500">Tus enlaces marcados como favoritos</p>
+            </div>
+            <div class="p-6 space-y-2" id="favoritosContainer"></div>
+        </div>
+
+        <!-- Recent Links -->
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm lg:col-span-2">
+            <div class="p-6 border-b border-slate-200">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h3 class="text-lg font-bold text-slate-900">Enlaces Recientes</h3>
+                </div>
+                <p class="text-sm text-slate-500">Últimos enlaces agregados a tu colección</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="enlacesRecientesContainer"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal de Importar -->
-<div class="modal fade" id="modalImportar" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-upload me-2"></i>Importar Enlaces
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Pega aquí el JSON exportado previamente:</p>
-                <textarea class="form-control" id="importData" rows="10" placeholder='{"categorias": [...]}'></textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="importarEnlaces()">
-                    <i class="bi bi-upload me-2"></i>Importar
-                </button>
-            </div>
+<!-- Import Dialog -->
+<div id="importDialog" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this) closeDialog('importDialog')">
+    <div class="bg-white rounded-lg max-w-md w-full fade-in">
+        <div class="p-6 border-b border-slate-200">
+            <h3 class="text-lg font-bold text-slate-900">Importar Enlaces</h3>
+            <p class="text-sm text-slate-500 mt-1">Pega el JSON exportado previamente</p>
+        </div>
+        <div class="p-6">
+            <textarea
+                id="importData"
+                placeholder='{"categorias": [...]}'
+                rows="10"
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-mono text-sm"
+            ></textarea>
+        </div>
+        <div class="p-6 border-t border-slate-200 flex justify-end gap-3">
+            <button onclick="closeDialog('importDialog')" class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                Cancelar
+            </button>
+            <button onclick="importData()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Importar
+            </button>
         </div>
     </div>
 </div>
@@ -284,26 +170,22 @@
 let estadisticas = null;
 let searchTimeout = null;
 
-// Cargar estadísticas al inicio
+function openDialog(dialogId) {
+    document.getElementById(dialogId).classList.remove('hidden');
+}
+
+function closeDialog(dialogId) {
+    document.getElementById(dialogId).classList.add('hidden');
+    if (dialogId === 'importDialog') {
+        document.getElementById('importData').value = '';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     cargarEstadisticas();
     cargarFavoritos();
-
-    // Búsqueda en tiempo real
-    document.getElementById('searchGlobal').addEventListener('input', function(e) {
-        clearTimeout(searchTimeout);
-        const query = e.target.value.trim();
-
-        if (query.length < 2) {
-            document.getElementById('searchResults').style.display = 'none';
-            return;
-        }
-
-        searchTimeout = setTimeout(() => buscarGlobal(query), 300);
-    });
 });
 
-// Cargar estadísticas generales
 async function cargarEstadisticas() {
     try {
         const response = await fetch('/api/estadisticas');
@@ -319,98 +201,43 @@ async function cargarEstadisticas() {
     }
 }
 
-// Mostrar estadísticas en las cards
 function mostrarEstadisticas() {
     document.getElementById('totalCategorias').textContent = estadisticas.total_categorias;
     document.getElementById('totalEnlaces').textContent = estadisticas.total_enlaces;
     document.getElementById('totalFavoritos').textContent = estadisticas.total_favoritos;
-    document.getElementById('totalClicks').textContent = estadisticas.total_clicks;
+    document.getElementById('totalClicks').textContent = estadisticas.total_clicks.toLocaleString();
 
     mostrarTopEnlaces();
-    mostrarCategoriasPopulares();
     mostrarEnlacesRecientes();
 }
 
-// Mostrar top enlaces
 function mostrarTopEnlaces() {
     const container = document.getElementById('topEnlacesContainer');
 
     if (estadisticas.top_enlaces.length === 0) {
-        container.innerHTML = '<div class="no-results"><i class="bi bi-inbox fs-1"></i><p>No hay enlaces visitados todavía</p></div>';
+        container.innerHTML = '<div class="text-center py-8 text-slate-400"><svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg><p>No hay enlaces visitados todavía</p></div>';
         return;
     }
 
-    container.innerHTML = estadisticas.top_enlaces.slice(0, 10).map(enlace => `
-        <div class="quick-link-card" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="flex-grow-1">
-                    <h6 class="mb-1">
-                        ${enlace.favorito ? '<i class="bi bi-star-fill favorite-badge"></i> ' : ''}
-                        ${enlace.titulo}
-                    </h6>
-                    <small class="text-muted">${truncarTexto(enlace.url, 50)}</small>
-                </div>
-                <div>
-                    <span class="click-badge">${enlace.clicks} clicks</span>
-                </div>
+    container.innerHTML = estadisticas.top_enlaces.slice(0, 10).map((enlace, idx) => `
+        <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 cursor-pointer transition-all" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
+            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <span class="text-sm font-bold text-blue-600">#${idx + 1}</span>
             </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    ${enlace.favorito ? '<svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' : ''}
+                    <p class="font-medium text-slate-900 truncate">${enlace.titulo}</p>
+                </div>
+                <p class="text-xs text-slate-500 truncate">${enlace.url}</p>
+            </div>
+            <span class="flex-shrink-0 px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">
+                ${enlace.clicks} clicks
+            </span>
         </div>
     `).join('');
 }
 
-// Mostrar categorías populares
-function mostrarCategoriasPopulares() {
-    const container = document.getElementById('categoriasPopularesContainer');
-
-    if (estadisticas.categorias_populares.length === 0) {
-        container.innerHTML = '<div class="no-results"><i class="bi bi-inbox fs-1"></i><p>No hay categorías todavía</p></div>';
-        return;
-    }
-
-    container.innerHTML = estadisticas.categorias_populares.map(cat => `
-        <div class="quick-link-card">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0">
-                        <span style="font-size: 1.5rem;">${cat.icono}</span>
-                        ${cat.nombre}
-                    </h6>
-                </div>
-                <div>
-                    <span class="badge bg-primary rounded-pill">${cat.cantidad} enlaces</span>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Mostrar enlaces recientes
-function mostrarEnlacesRecientes() {
-    const container = document.getElementById('enlacesRecientesContainer');
-
-    if (estadisticas.enlaces_recientes.length === 0) {
-        container.innerHTML = '<div class="no-results"><i class="bi bi-inbox fs-1"></i><p>No hay enlaces todavía</p></div>';
-        return;
-    }
-
-    container.innerHTML = estadisticas.enlaces_recientes.slice(0, 10).map(enlace => `
-        <div class="quick-link-card" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="flex-grow-1">
-                    <h6 class="mb-1">
-                        ${enlace.favorito ? '<i class="bi bi-star-fill favorite-badge"></i> ' : ''}
-                        ${enlace.titulo}
-                    </h6>
-                    <small class="text-muted">
-                        <i class="bi bi-folder-fill"></i> ${enlace.categoria_nombre}
-                    </small>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Cargar favoritos
 async function cargarFavoritos() {
     try {
         const response = await fetch('/api/favoritos');
@@ -424,97 +251,115 @@ async function cargarFavoritos() {
     }
 }
 
-// Mostrar favoritos
 function mostrarFavoritos(favoritos) {
     const container = document.getElementById('favoritosContainer');
 
     if (favoritos.length === 0) {
-        container.innerHTML = '<div class="no-results"><i class="bi bi-star fs-1"></i><p>No tienes favoritos todavía</p></div>';
+        container.innerHTML = '<div class="text-center py-8 text-slate-400"><svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><p>No tienes favoritos todavía</p></div>';
         return;
     }
 
     container.innerHTML = favoritos.slice(0, 10).map(enlace => `
-        <div class="quick-link-card" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="flex-grow-1">
-                    <h6 class="mb-1">
-                        <i class="bi bi-star-fill favorite-badge"></i>
-                        ${enlace.titulo}
-                    </h6>
-                    <small class="text-muted">
-                        <i class="bi bi-folder-fill"></i> ${enlace.categoria_nombre}
-                    </small>
+        <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 cursor-pointer transition-all" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
+            <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <div class="flex-1 min-w-0">
+                <p class="font-medium text-slate-900 truncate">${enlace.titulo}</p>
+                <p class="text-xs text-slate-500 truncate">${enlace.categoria_nombre}</p>
+            </div>
+            <span class="flex-shrink-0 px-2 py-1 border border-slate-300 text-slate-700 rounded-full text-xs">
+                ${enlace.clicks} clicks
+            </span>
+        </div>
+    `).join('');
+}
+
+function mostrarEnlacesRecientes() {
+    const container = document.getElementById('enlacesRecientesContainer');
+
+    if (estadisticas.enlaces_recientes.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-slate-400 col-span-2"><svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg><p>No hay enlaces todavía</p></div>';
+        return;
+    }
+
+    container.innerHTML = estadisticas.enlaces_recientes.slice(0, 10).map(enlace => `
+        <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 cursor-pointer transition-all" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                    ${enlace.favorito ? '<svg class="w-3.5 h-3.5 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' : ''}
+                    <p class="font-medium text-slate-900 truncate">${enlace.titulo}</p>
                 </div>
-                <div>
-                    <span class="badge bg-secondary">${enlace.clicks} clicks</span>
-                </div>
+                <p class="text-xs text-slate-500"><svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>${enlace.categoria_nombre}</p>
             </div>
         </div>
     `).join('');
 }
 
-// Búsqueda global
-async function buscarGlobal(query) {
-    try {
-        const response = await fetch(`/api/buscar?q=${encodeURIComponent(query)}`);
-        const data = await response.json();
+function handleSearch() {
+    const query = document.getElementById('searchGlobal').value.toLowerCase();
+    const resultsDiv = document.getElementById('searchResults');
 
-        if (data.success) {
-            mostrarResultadosBusqueda(data.resultados);
-        }
-    } catch (error) {
-        console.error('Error en búsqueda:', error);
+    clearTimeout(searchTimeout);
+
+    if (query.length < 2) {
+        resultsDiv.classList.add('hidden');
+        return;
     }
+
+    searchTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch(`/api/buscar?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            if (data.success) {
+                mostrarResultadosBusqueda(data.resultados);
+            }
+        } catch (error) {
+            console.error('Error en búsqueda:', error);
+        }
+    }, 300);
 }
 
-// Mostrar resultados de búsqueda
 function mostrarResultadosBusqueda(resultados) {
     const container = document.getElementById('searchResults');
 
     if (resultados.length === 0) {
-        container.innerHTML = '<div class="alert alert-info mt-3">No se encontraron resultados</div>';
-        container.style.display = 'block';
+        container.innerHTML = '<div class="p-3"><p class="text-sm text-slate-500">No se encontraron resultados</p></div>';
+        container.classList.remove('hidden');
         return;
     }
 
     container.innerHTML = `
-        <div class="alert alert-success mt-3">
-            <strong>${resultados.length}</strong> resultado(s) encontrado(s)
-        </div>
-        ${resultados.map(enlace => `
-            <div class="quick-link-card" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="flex-grow-1">
-                        <h6 class="mb-1">
-                            ${enlace.favorito ? '<i class="bi bi-star-fill favorite-badge"></i> ' : ''}
-                            ${enlace.titulo}
-                        </h6>
-                        <small class="text-muted">${enlace.url}</small><br>
-                        <small class="text-muted">
-                            <i class="bi bi-folder-fill"></i> ${enlace.categoria_nombre}
-                        </small>
+        <div class="p-3">
+            <p class="text-sm font-medium text-slate-700 mb-3">${resultados.length} resultado(s) encontrado(s)</p>
+            ${resultados.map(enlace => `
+                <div class="p-3 hover:bg-slate-50 rounded-lg cursor-pointer border border-slate-200 mb-2" onclick="abrirEnlace(${enlace.id}, '${enlace.url}')">
+                    <div class="flex items-center gap-2 mb-1">
+                        ${enlace.favorito ? '<svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' : ''}
+                        <p class="font-medium text-slate-900 truncate">${enlace.titulo}</p>
                     </div>
+                    <p class="text-sm text-slate-500 truncate">${enlace.url}</p>
+                    <p class="text-xs text-slate-400 mt-1">${enlace.categoria_nombre}</p>
                 </div>
-            </div>
-        `).join('')}
+            `).join('')}
+        </div>
     `;
-    container.style.display = 'block';
+    container.classList.remove('hidden');
 }
 
-// Abrir enlace y registrar click
 async function abrirEnlace(id, url) {
     try {
         await fetch(`/api/enlaces/${id}/click`, { method: 'POST' });
         window.open(url, '_blank');
-        cargarEstadisticas(); // Recargar stats
+        cargarEstadisticas();
     } catch (error) {
         console.error('Error al registrar click:', error);
         window.open(url, '_blank');
     }
 }
 
-// Exportar enlaces
-async function exportarEnlaces() {
+async function exportData() {
     try {
         const response = await fetch('/api/exportar');
         const data = await response.json();
@@ -535,13 +380,12 @@ async function exportarEnlaces() {
     }
 }
 
-// Importar enlaces
-async function importarEnlaces() {
+async function importData() {
     try {
         const jsonData = document.getElementById('importData').value.trim();
 
         if (!jsonData) {
-            mostrarNotificacion('Por favor pega el JSON a importar', 'warning');
+            mostrarNotificacion('Por favor pega el JSON a importar', 'error');
             return;
         }
 
@@ -557,7 +401,7 @@ async function importarEnlaces() {
 
         if (result.success) {
             mostrarNotificacion(result.message, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('modalImportar')).hide();
+            closeDialog('importDialog');
             cargarEstadisticas();
         } else {
             mostrarNotificacion(result.error, 'error');
@@ -568,15 +412,13 @@ async function importarEnlaces() {
     }
 }
 
-// Mostrar solo favoritos
-function mostrarSoloFavoritos() {
-    window.location.href = '/#favoritos';
-}
-
-// Truncar texto
-function truncarTexto(texto, longitud) {
-    if (texto.length <= longitud) return texto;
-    return texto.substring(0, longitud) + '...';
-}
+// Close search results when clicking outside
+document.addEventListener('click', function(e) {
+    const searchInput = document.getElementById('searchGlobal');
+    const searchResults = document.getElementById('searchResults');
+    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.classList.add('hidden');
+    }
+});
 </script>
 {% endblock %}
