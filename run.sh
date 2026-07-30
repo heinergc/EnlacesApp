@@ -54,11 +54,22 @@ fi
 echo ""
 
 echo "========================================"
+echo "  MIGRANDO BASE DE DATOS..."
+echo "========================================"
+echo ""
+# Ejecutar migración si existe la BD
+if [ -f "enlaces.db" ]; then
+    python3 migrate_db.py
+    echo ""
+fi
+
+echo "========================================"
 echo "  INICIANDO SERVIDOR..."
 echo "========================================"
 echo ""
 echo "🌐 La aplicación estará disponible en:"
 echo "   http://localhost:5000"
+echo "   http://localhost:5000/dashboard  [NUEVO!]"
 echo ""
 echo "🛑 Presiona Ctrl+C para detener el servidor"
 echo "========================================"

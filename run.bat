@@ -59,11 +59,22 @@ if %errorlevel% neq 0 (
 echo.
 
 echo ========================================
+echo   MIGRANDO BASE DE DATOS...
+echo ========================================
+echo.
+REM Ejecutar migración si existe la BD
+if exist enlaces.db (
+    python migrate_db.py
+    echo.
+)
+
+echo ========================================
 echo   INICIANDO SERVIDOR...
 echo ========================================
 echo.
 echo La aplicacion estara disponible en:
 echo http://localhost:5000
+echo http://localhost:5000/dashboard  [NUEVO!]
 echo.
 echo Presiona Ctrl+C para detener el servidor
 echo ========================================
