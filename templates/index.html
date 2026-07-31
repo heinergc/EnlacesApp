@@ -158,13 +158,18 @@ async function cargarCategorias() {
     }
 }
 
+const FOLDER_ICON_SVG = `<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776"/></svg>`;
+
 function crearCardCategoria(categoria) {
+    const tieneIconoPersonalizado = categoria.icono && categoria.icono !== '📁';
     return `
         <div class="glass-dark rounded-lg glow-blue-hover transition-all gradient-border">
             <div class="p-6">
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex items-center gap-3">
-                        <div class="text-3xl">${categoria.icono || '📁'}</div>
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center glow-blue flex-shrink-0 ${tieneIconoPersonalizado ? 'text-2xl' : ''}">
+                            ${tieneIconoPersonalizado ? categoria.icono : FOLDER_ICON_SVG}
+                        </div>
                         <div>
                             <h3 class="text-lg font-bold text-white">${categoria.nombre}</h3>
                             <span class="inline-block mt-1 px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-semibold">
